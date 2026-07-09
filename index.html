@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>안전 복약 가이드</title>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
+    <style>
+        /* 1) 보완점: 화면 스크롤을 완전히 차단하고 전체 화면을 강제 터치 영역으로 지정 */
+        body { 
+            font-family: 'Pretendard', -apple-system, sans-serif; 
+            background-color: #121212; 
+            color: #ffffff; 
+            margin: 0; 
+            padding: 0; 
+            display: flex; 
+            flex-direction: column; 
+            height: 100vh; 
+            overflow: hidden; 
+            cursor: pointer; 
+        }
+        
+        /* 상단: 대형 약 정보 텍스트 영역 (화면의 55% 분할) */
+        .info-section { 
+            flex: 55; 
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            text-align: center;
+            box-sizing: border-box;
+        }
+        .badge { 
+            background: #27272a; 
+            color: #4ade80; 
+            padding: 8px 16px; 
+            border-radius: 20px; 
+            font-size: 18px; 
+            font-weight: bold; 
+            margin-bottom: 20px;
+        }
+        .status-text { 
+            font-size: 24px;
+            color: #a1a1aa;
+            margin-bottom: 10px;
+        }
+        .med-name {
+            font-size: 42px;
+            font-weight: 800;
+            color: #ffffff;
+            margin: 15px 0;
+            word-break: keep-all;
+        }
+        .med-info {
+            font-size: 28px;
+            color: #e4e4e7;
+            line-height: 1.6;
+            margin-top: 15px;
+            white-space: pre-wrap;
+            word-break: keep-all;
+        }
+
+        /* 하단: 안내 문구 터치 보조 영역 (화면의 45% 분할) */
+        .button-section {
+            flex: 45;
+            background-color: #1e1e24;
+            border-top: 2px solid #27272a;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+        .action-hint {
+            font-size: 34px;
+            font-weight: bold;
+            color: #4ade80;
+            text-align: center;
+            word-break: keep-all;
+        }
+        .sub-hint {
+            font-size: 20px;
+            color: #71717a;
+            margin-top: 12px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="info-section">
+        <div class="badge" id="sticker-badge">약 번호 확인 중</div>
+        <div class="status-text" id="status-label">안내를 시작하려면 화면을 터치하세요</div>
+        <div class="med-name" id="med-title">복약 가이드</div>
+        <div class="med-info" id="med-details">화면 아무 곳이나 가볍게 누르시면 음성 복약 안내가 시작됩니다.</div>
+    </div>
+
+    <div class="button-section">
+        <div class="action-hint">🔊 화면 어디든 누르면 다시 재생</div>
+        <div class="sub-hint">손끝 닿는 곳 전체가 터치 버튼입니다</div>
+    </div>
+
+    <script>
+        // 입력하신 파이어베이스 실제 연결 설정 값
+        const firebaseConfig = {
+            apiKey: "AIzaSyCKcCMOT9OwFkkKm0Ot3StOFuDpim0CbNs",
+            authDomain: "tactile-qr-code-sticker.firebaseapp.com",
+            databaseURL: "https://tactile-qr-code-sticker-default-rtdb.firebaseio.com",
+            projectId: "tactile-qr-code-sticker",
+            storageBucket: "tactile-qr-code-sticker.firebasestorage.app",
+            messagingSenderId: "456709355304",
+            appId: "1:456709355304:web:eb1ba4148b0398a8f6c21d"
+        };
+
+        // 파이어베이스 엔진 초기화 및 DB 인스턴스 확보
+        firebase.initializeApp(firebaseConfig);
+        const database = firebase.database();
+
+        let guideText = "복약 정보를 실시간으로 불러오는 중입니다. 잠시만 기다려 주세요.";
+        let isFirstClick = true;
+
+        // 인쇄된 고정 QR의 가변 쿼리 파라미터 파싱 (예: 주소.app/?id=001)
+        const urlParams = new URLSearchParams(window.location.search);
+        const stickerId = urlParams.get('id') || "001"; 
+        document.getElementById('sticker-badge').innerText = `약 번호: ${stickerId}`;
+
+        // 🔄 Realtime Database 실시간 연동 처리기
+        database.ref('medicines/' + stickerId).on('value', (snapshot) => {
+            const data = snapshot.val();
+            if (data) {
+                const name = data.name || "등록된 약명 없음";
+                const info = data.info || "상세 정보가 등록되지 않았습니다.";
+                
+                // [현장 인터뷰 피드백 수렴]: 약 특징(외형 설명) 및 유통기한 데이터 확장 결합
+                const appearance = data.appearance ? `이 약은 ${data.appearance} 모양입니다. ` : ""; 
+                const expiration = data.expiration ? `유통기한은 ${data.expiration}까지입니다. ` : "";
+
+                // 최종 정제된 전체 음성 본문 완성
+                guideText = `${name}입니다. ${appearance}${info} ${expiration}`;
+                
+                // 브라우저 텍스트 대형 폰트 업데이트 반영
+                document.getElementById('med-title').innerText = name;
+                document.getElementById('med-details').innerText = `${info}\n\n[약 특징]: ${data.appearance || '미등록'}\n[유통기한]: ${data.expiration || '미등록'}`;
+                document.getElementById('status-label').innerText = "복약 안내 준비 완료";
+            } else {
+                guideText = "등록되지 않은 약 스티커 번호입니다. 조제 받으신 약국에 문의해 주세요.";
+                document.getElementById('med-title').innerText = "약 정보 없음";
+                document.getElementById('med-details').innerText = guideText;
+            }
+        });
+
+        // 1) 보완점: 노인 및 저시력자 청취 가독성을 위한 TTS 재생 함수 속도 제어
+        function playTTS(text) {
+            window.speechSynthesis.cancel(); // 큐에 쌓여있거나 버퍼링 걸린 음성 즉시 제거
+
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.lang = 'ko-KR';
+            utterance.rate = 0.75; // 속도를 0.75배속으로 낮추어 오남용 방지 청취 최적화
+
+            window.speechSynthesis.speak(utterance);
+        }
+
+        // 2) & 3) 보완점: 화면 전체 클릭 제어 + 모바일 햅틱 진동 피드백
+        document.body.addEventListener('click', function() {
+            
+            // 3) 보완점: 화면이 터치되는 순간 200ms 동안 물리 진동(햅틱) 발생
+            if (navigator.vibrate) {
+                navigator.vibrate(200);
+            }
+
+            // 최초 터치 진입 시에만 카메라 스캔 성공 알림 문구 결합 (모바일 보안 정책 우회)
+            if (isFirstClick) {
+                const welcomeText = "큐알 코드가 정상적으로 인식되었습니다. 복약 안내를 시작합니다. " + guideText;
+                playTTS(welcomeText);
+                isFirstClick = false;
+                document.getElementById('status-label').innerText = "🔊 현재 복약 정보 재생 중";
+            } else {
+                // 연속 터치 재생 시에는 불필요한 인트로 문구를 제거하고 핵심 복약 안내만 깔끔하게 반복
+                playTTS(guideText);
+            }
+        });
+    </script>
+</body>
+</html>
