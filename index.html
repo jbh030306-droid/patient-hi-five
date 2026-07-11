@@ -98,7 +98,6 @@
     </div>
 
     <script>
-        // 약사 패널 코드와 글자 한 토막까지 일치시킨 파이어베이스 설정 값
         const firebaseConfig = {
             apiKey: "AIzaSyCKcCMOT9OwFkkKm0Ot3StOFuDpimOCbNs",
             authDomain: "tactile-qr-code-sticker.firebaseapp.com",
@@ -118,17 +117,13 @@
         const urlParams = new URLSearchParams(window.location.search);
         let stickerId = urlParams.get('id') || "001"; 
         
-        // 약사 패널 데이터 구조 분석 결과: 스티커 번호 키값은 '001', '002' 번 없이 깔끔하게 저장됨
         document.getElementById('sticker-badge').innerText = `약 번호: ${stickerId}`;
 
-        // 🔄 약사 패널 타겟 경로인 'stickers/' 로 변경 완료
         database.ref('stickers/' + stickerId).on('value', (snapshot) => {
             const data = snapshot.val();
             
             if (data) {
-                // 약사 패널이 사용하는 'instruction' 필드 매핑 완료
                 const infoText = data.instruction || "등록된 복약 지도 내용이 없습니다.";
-                
                 guideText = infoText;
                 document.getElementById('med-title').innerText = `${stickerId}번 약 안내`;
                 document.getElementById('med-details').innerText = infoText;
@@ -154,12 +149,14 @@
                 navigator.vibrate(200);
             }
 
+            // ✨ [업데이트]: 환자가 QR 스캔 후 화면을 처음 만졌을 때 유저 요구사항 반영
             if (isFirstClick) {
-                const welcomeText = "큐알 코드가 인식되었습니다. " + guideText;
+                const welcomeText = "화면 어디를 눌러도 음성이 나옵니다! 큐알 코드가 인식되었습니다. " + guideText;
                 playTTS(welcomeText);
                 isFirstClick = false;
                 document.getElementById('status-label').innerText = "🔊 현재 복약 정보 재생 중";
             } else {
+                // 두 번째 터치부터는 불필요한 인트로 없이 깔끔하게 복약 정보만 반복 재생
                 playTTS(guideText);
             }
         });
