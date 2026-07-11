@@ -20,7 +20,7 @@
             cursor: pointer; 
         }
         .info-section { 
-            flex: 55; 
+            flex: 50; 
             display: flex;
             flex-direction: column;
             justify-content: center;
@@ -59,7 +59,7 @@
             word-break: keep-all;
         }
         .button-section {
-            flex: 45;
+            flex: 35;
             background-color: #1e1e24;
             border-top: 2px solid #27272a;
             display: flex;
@@ -81,6 +81,20 @@
             color: #71717a;
             margin-top: 12px;
         }
+        /* 🚨 팀장님 확인용 실시간 시스템 진단 패널 (화면 하단 15% 차지) */
+        .debug-panel {
+            flex: 15;
+            background-color: #000000;
+            border-top: 2px dashed #dc2626;
+            color: #ef4444;
+            font-family: monospace;
+            font-size: 13px;
+            padding: 10px;
+            overflow-y: auto;
+            box-sizing: border-box;
+            text-align: left;
+            pointer-events: none; /* 클릭 방해 금지 */
+        }
     </style>
 </head>
 <body>
@@ -97,8 +111,19 @@
         <div class="sub-hint">손끝 닿는 곳 전체가 터치 버튼입니다</div>
     </div>
 
+    <div class="debug-panel" id="debug-log">
+        [시스템 진단 로그]<br>
+        - URL 감지 시작...
+    </div>
+
     <script>
-        // 유령 문자가 전부 청소된 정식 파이어베이스 설정 값
+        const logArea = document.getElementById('debug-log');
+        function log(msg, isSuccess = false) {
+            const color = isSuccess ? '#4ade80' : '#ef4444';
+            logArea.innerHTML += `<br><span style="color:${color}">${msg}</span>`;
+            logArea.scrollTop = logArea.scrollHeight;
+        }
+
         const firebaseConfig = {
             apiKey: "AIzaSyCKcCMOT9OwFkkKm0Ot3StOFuDpim0CbNs",
             authDomain: "tactile-qr-code-sticker.firebaseapp.com",
@@ -109,24 +134,38 @@
             appId: "1:456709355304:web:eb1ba4148b0398a8f6c21d"
         };
 
-        // 엔진 초기화
-        firebase.initializeApp(firebaseConfig);
-        const database = firebase.database();
+        try {
+            firebase.initializeApp(firebaseConfig);
+            log("- 파이어베이스 연동 성공(Config OK)", true);
+        } catch(e) {
+            log("- 파이어베이스 연동 실패: " + e.message);
+        }
 
+        const database = firebase.database();
         let guideText = "복약 정보를 불러오는 중입니다.";
         let isFirstClick = true;
 
         const urlParams = new URLSearchParams(window.location.search);
-        let stickerId = urlParams.get('id') || "001"; 
+        let stickerId = urlParams.get('id');
         
-        // 스크립트가 정상 작동하면 배지 내용부터 즉시 변경되도록 처리
+        if(!stickerId) {
+            log("- [경고] 주소 뒤에 ?id=001이 없습니다! 기본값 001로 시도합니다.");
+            stickerId = "001";
+        }
+        
         document.getElementById('sticker-badge').innerText = `약 번호: ${stickerId}`;
+        log(`- 주소창 인식 완료 (찾는 ID: ${stickerId})`, true);
 
         function loadData(id) {
+            log(`- DB 경로 감시 중: medicines/${id}...`);
+            
             database.ref('medicines/' + id).on('value', (snapshot) => {
                 const data = snapshot.val();
                 
                 if (data) {
+                    log(`- [성공] 데이터 수신 완료! 데이터 형태: ${typeof data}`, true);
+                    log(`- [수신 내용]: ${JSON.stringify(data)}`, true);
+
                     document.getElementById('sticker-badge').innerText = `약 번호: ${id}`;
                     let name = "복약 안내";
                     let info = "";
@@ -134,14 +173,15 @@
                     let expiration = "";
 
                     if (typeof data === 'object') {
-                        name = data.name || "안전 복약 안내";
-                        info = data.info || "등록된 내용이 없습니다.";
+                        // 💡 만약 데이터가 객체인데 name이나 info가 없다면 대안 필드 검색
+                        name = data.name || data.title || "안전 복약 안내";
+                        info = data.info || data.content || data.text || "내용이 비어있습니다.";
                         appearance = data.appearance ? `이 약은 ${data.appearance} 모양입니다. ` : ""; 
                         expiration = data.expiration ? `유통기한은 ${data.expiration}까지입니다. ` : "";
                         
                         document.getElementById('med-details').innerText = `${info}\n\n[약 특징]: ${data.appearance || '미등록'}\n[유통기한]: ${data.expiration || '미등록'}`;
-                    } else if (typeof data === 'string') {
-                        info = data;
+                    } else {
+                        info = data.toString();
                         document.getElementById('med-details').innerText = info;
                     }
 
@@ -149,7 +189,9 @@
                     document.getElementById('med-title').innerText = name;
                     document.getElementById('status-label').innerText = "복약 안내 준비 완료";
                 } else {
+                    log(`- [실패] medicines/${id} 경로에 데이터가 비어있음 (null)`);
                     if (!id.endsWith('번')) {
+                        log(`- [우회] 뒤에 '번'을 붙여 medicines/${id}번 경로로 다시 찾습니다.`);
                         loadData(id + '번');
                     } else {
                         guideText = "등록되지 않은 약 스티커 번호입니다.";
@@ -157,10 +199,11 @@
                         document.getElementById('med-details').innerText = guideText;
                     }
                 }
+            }, (error) => {
+                log("- 파이어베이스 데이터베이스 에러 발생: " + error.message);
             });
         }
 
-        // 실시간 데이터 감시 시작
         loadData(stickerId);
 
         function playTTS(text) {
@@ -172,10 +215,7 @@
         }
 
         document.body.addEventListener('click', function() {
-            if (navigator.vibrate) {
-                navigator.vibrate(200);
-            }
-
+            if (navigator.vibrate) { navigator.vibrate(200); }
             if (isFirstClick) {
                 const welcomeText = "큐알 코드가 인식되었습니다. " + guideText;
                 playTTS(welcomeText);
