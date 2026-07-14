@@ -2,242 +2,154 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>하이파이브 - 스마트 촉각 QR 복약 안내</title>
     <!-- 파이어베이스 SDK 연동 -->
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
+    
+    <!-- STREAMING_CHUNK:Designing full-screen layout tokens... -->
     <style>
+        /* 기본 레이아웃 초기화: 스크롤을 완전히 없애고 모바일 전체 화면(100vh)에 고정 */
         * {
             box-sizing: border-box;
             margin: 0;
             padding: 0;
+            user-select: none;
+            -webkit-user-select: none;
         }
 
-        :root {
-            --primary: #2563eb;
-            --primary-hover: #1d4ed8;
-            --text: #0f172a;
-            --text-light: #475569;
-        }
-
-        /* 약사 패널과 100% 동일한 은은한 스카이 블루 그라데이션 배경 및 정중앙 정렬 */
-        body {
+        html, body {
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background-color: #121212;
             font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
-            background: linear-gradient(135deg, #e0f2fe 0%, #f0f9ff 100%);
-            background-attachment: fixed;
-            color: var(--text);
-            min-height: 100vh;
+        }
+
+        /* 스마트폰 화면을 상단(정보 노출: 60%)과 하단(터치 컨트롤: 40%) 영역으로 분할 */
+        .viewport-wrapper {
+            display: flex;
+            flex-direction: column;
+            width: 100%;
+            height: 100vh;
+        }
+
+        /* 1. 상단 정보 노출 영역 (딥 블랙 테마로 명도대비 극대화) */
+        .top-section {
+            flex: 6.2;
+            background-color: #121212;
             display: flex;
             flex-direction: column;
             align-items: center;
-            justify-content: flex-start;
-            padding: 100px 20px 60px 20px;
+            justify-content: center;
+            padding: 40px 24px;
+            text-align: center;
             position: relative;
         }
 
-        .team-container {
-            width: 100%;
-            max-width: 560px;
-            display: flex;
-            justify-content: flex-end;
-            margin-bottom: 20px;
-            z-index: 10;
-        }
-
-        .team-credits {
-            font-size: 12px;
-            color: #475569;
-            text-align: right;
-            line-height: 1.6;
-            background: rgba(255, 255, 255, 0.75);
-            padding: 12px 18px;
-            border-radius: 14px;
-            border: 1px solid rgba(191, 219, 254, 0.5);
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
-            backdrop-filter: blur(8px);
-        }
-        .team-credits strong {
-            color: #1e40af;
+        /* 성북구 약사회 시범운영 캡슐 배지 */
+        .badge {
+            background-color: rgba(16, 185, 129, 0.15);
+            color: #10b981;
+            padding: 8px 18px;
+            border-radius: 50px;
+            font-size: 15px;
             font-weight: 700;
-        }
-
-        .instagram-link {
+            margin-bottom: 25px;
             display: inline-flex;
             align-items: center;
-            gap: 5px;
-            margin-top: 8px;
-            font-size: 11px;
-            font-weight: 700;
-            color: #db2777;
-            background: rgba(219, 39, 119, 0.08);
-            padding: 4px 10px;
-            border-radius: 20px;
-            text-decoration: none;
-            transition: all 0.2s ease;
-        }
-        .instagram-link:hover {
-            background: rgba(219, 39, 119, 0.15);
-            transform: translateY(-1px);
+            gap: 6px;
+            border: 1px solid rgba(16, 185, 129, 0.3);
         }
 
-        .box {
-            width: 100%;
-            max-width: 560px;
-            background: #ffffff;
-            padding: 40px;
-            border-radius: 24px;
-            box-shadow: 0 20px 40px -15px rgba(15, 23, 42, 0.1);
-            border: 1px solid rgba(255, 255, 255, 0.7);
-        }
-        
-        .badge-container {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 25px;
-        }
-        .badge {
-            background: #dbeafe;
-            color: #1e40af;
-            padding: 6px 14px;
-            border-radius: 20px;
-            font-size: 12px;
+        .section-label {
+            color: #94a3b8;
+            font-size: 18px;
             font-weight: 700;
-        }
-        .badge-pharmacy {
-            background: #fef3c7;
-            color: #92400e;
-            margin-left: 6px;
-        }
-        
-        h2 {
-            font-size: 24px;
-            font-weight: 800;
-            margin-bottom: 24px;
-            letter-spacing: -0.03em;
-            line-height: 1.4;
-            color: #0f172a;
+            margin-bottom: 20px;
+            letter-spacing: 0.05em;
         }
 
-        /* 🌟 [개선] 저시력자 가독성 극대화를 위해 선명한 고대비 테두리, 대형 폰트(28px) 및 칠흑색 폰트 컬러 지정 */
-        .instruction-box {
-            width: 100%;
-            min-height: 180px;
-            background: #ffffff;
-            border: 3px solid #1e3a8a; /* 선명하고 확실한 다크블루 아웃라인 */
-            border-radius: 16px;
-            padding: 24px;
-            font-size: 28px; /* 기존 18px -> 28px 로 대폭 상향 */
-            font-weight: 800; /* Extra Bold 처리 */
-            line-height: 1.6;
-            color: #000000; /* 완전한 Pure Black으로 높은 명도 대비 제공 */
-            margin-bottom: 24px;
-            word-break: break-all;
-            box-shadow: inset 0 2px 4px rgba(0,0,0,0.05);
-        }
-        
-        .btn-save {
-            width: 100%;
-            background: linear-gradient(135deg, #3b82f6 0%, var(--primary) 100%);
-            color: white;
-            padding: 20px;
-            border: none;
-            border-radius: 12px;
-            font-size: 20px;
+        /* 🌟 [개선] 저시력자를 위한 초고대비/슈퍼 사이즈 폰트 (눈이 어두우신 분도 돋보기 없이 즉시 식별 가능) */
+        .instruction-text {
+            font-size: 32px;
             font-weight: 800;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2);
+            line-height: 1.5;
+            color: #ff6b6b; /* 높은 채도의 코랄 레드 색상으로 강력한 명시성 제공 */
+            max-width: 90%;
+            word-break: keep-all;
+            text-align: center;
+            letter-spacing: -0.02em;
+        }
+
+        /* 2. 하단 대형 스피커/터치 제어 영역 (선명한 로열 블루 테마) */
+        .bottom-section {
+            flex: 3.8;
+            background-color: #2563eb;
             display: flex;
+            flex-direction: column;
             align-items: center;
             justify-content: center;
-            gap: 8px;
-        }
-        .btn-save:hover {
-            background: linear-gradient(135deg, var(--primary) 0%, #1d4ed8 100%);
-            transform: translateY(-1px);
-            box-shadow: 0 6px 16px rgba(37, 99, 235, 0.3);
-        }
-
-        /* 🌟 저시력자 식별 향상을 위해 가이드 텍스트 명도대비 증강 */
-        .input-helper {
-            font-size: 14px;
-            color: #1e3a8a; /* 연한 회색 대신 진하고 선명한 다크블루 폰트 변경 */
-            display: block;
-            margin-top: 15px;
-            text-align: center;
-            font-weight: 700;
-        }
-        
-        .footer-message {
-            margin-top: 40px;
-            padding-top: 25px;
-            border-top: 1px dashed #e2e8f0;
-            text-align: center;
-            font-style: italic;
-            color: #94a3b8;
-            font-size: 14px;
-            font-weight: 500;
+            padding: 24px;
+            cursor: pointer;
+            transition: background-color 0.2s ease;
+            position: relative;
+            box-shadow: 0 -10px 30px rgba(0, 0, 0, 0.3);
         }
 
-        /* 반응형 처리 */
-        @media (max-width: 900px) {
-            body {
-                padding-top: 30px;
-            }
-            .team-container {
-                justify-content: center;
-            }
-            .team-credits {
-                text-align: center;
-                width: 100%;
-            }
+        .bottom-section:active {
+            background-color: #1d4ed8; /* 터치 시 확실한 시각 피드백 */
+        }
+
+        /* 거대한 3D 입체 스피커 애니메이션 아이콘 */
+        .speaker-icon {
+            font-size: 76px;
+            margin-bottom: 12px;
+            filter: drop-shadow(0 4px 10px rgba(0,0,0,0.2));
+            animation: pulse 2s infinite;
+        }
+
+        .touch-guide-text {
+            color: #ffffff;
+            font-size: 24px;
+            font-weight: 800;
+            letter-spacing: -0.03em;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.06); }
+            100% { transform: scale(1); }
         }
     </style>
 </head>
 <body>
 
-    <!-- 2026 글로벌 리더십 챌린지 팀 소개 영역 -->
-    <div class="team-container">
-        <div class="team-credits">
-            2026 NSI 글로벌 리더십 챌린지 참가팀 <strong>'하이파이브'</strong><br>
-            정병현(고려대) · 이서빈(경희대) · 최윤서(경인교대) · 황성철(중앙대) · 현수진(중앙대)
-            <br>
-            <a href="https://www.instagram.com/global_hifive?utm_source=ig_web_button_share_sheet&igsh=ZDNlZDc0MzIxNw==" target="_blank" class="instagram-link">
-                📸 공식 인스타그램 바로가기
-            </a>
-        </div>
-    </div>
-
-    <div class="box">
-        <div class="badge-container">
-            <div>
-                <span class="badge">음성 가이드</span>
-                <span class="badge badge-pharmacy" id="viewPharmacy">연결 중...</span>
+    <!-- STREAMING_CHUNK: Creating high-contrast UI structure... -->
+    <div class="viewport-wrapper">
+        
+        <!-- 상단: 고대비 정보 노출 영역 (60%) -->
+        <div class="top-section">
+            <div class="badge">✓ 성북구 약사회 시범운영</div>
+            <div class="section-label" id="viewPharmacy">연결 중...</div>
+            <div class="instruction-text" id="viewInstruction">
+                복약 정보를 가져오고 있습니다...
             </div>
         </div>
-        
-        <h2 id="viewStickerTitle">-번 촉각 QR 복약 안내</h2>
-        
-        <!-- 복약 지도 텍스트가 표시될 영역 (고대비/대형 텍스트 탑재) -->
-        <div class="instruction-box" id="viewInstruction">
-            의약품 복약 정보를 실시간으로 조회하고 있습니다...
-        </div>
-        
-        <!-- 시각 약자를 위해 더 크게 제작된 TTS 버튼 -->
-        <button class="btn-save" onclick="speakGuidance()">
-            🔊 복약 안내 다시듣기
-        </button>
 
-        <span class="input-helper">※ 화면 어디든 가볍게 터치하시면 복약 음성이 다시 재생됩니다.</span>
-
-        <div class="footer-message">
-            "지역 사회를 위한 따뜻한 동행에 동참해주셔서 감사합니다."
+        <!-- 하단: 거대 터치 패널 (40%) -->
+        <div class="bottom-section" onclick="speakGuidance()">
+            <div class="speaker-icon">🔊</div>
+            <div class="touch-guide-text">화면 아래를 눌러 다시 듣기</div>
         </div>
+
     </div>
 
+    <!-- STREAMING_CHUNK: Initializing Firebase & TTS engine... -->
     <script>
+        // 파이어베이스 데이터베이스 설정
         const firebaseConfig = {
             apiKey: "AIzaSyCKcCMOT9OwFkkKm0Ot3StOFuDpimOCbNs",
             authDomain: "tactile-qr-code-sticker.firebaseapp.com",
@@ -250,7 +162,7 @@
         firebase.initializeApp(firebaseConfig);
         const database = firebase.database();
 
-        // 약국 한글 명칭 맵
+        // 등록된 지역 약국 목록 매핑
         const pharmacyNames = {
             "onnuri_minwoo": "온누리민우약국",
             "dolgoji": "돌곶이약국",
@@ -258,27 +170,26 @@
             "beautiful": "아름다운약국"
         };
 
-        // URL 파라미터 해독 (?p=약국코드&id=스티커번호)
+        // 주소창 파라미터 파싱 (?p=약국코드&id=스티커번호)
         const urlParams = new URLSearchParams(window.location.search);
         const pParam = urlParams.get('p');
         const idParam = urlParams.get('id') || '001';
 
-        // p 파라미터가 비어있다면 무조건 기본값인 'onnuri_minwoo'로 우회 (온누리민우약국 기존 스티커 100% 호환 보장)
+        // 약국 ID 미지정 시 온누리민우약국으로 자동 대체하여 호환성 사수
         let pharmacyId = pParam ? pParam.trim() : 'onnuri_minwoo';
 
-        // UI에 매핑된 약국명 및 타이틀 출력
-        const korPharmacyName = pharmacyNames[pharmacyId] || pharmacyId;
-        document.getElementById('viewPharmacy').innerText = "🏥 " + korPharmacyName;
-        document.getElementById('viewStickerTitle').innerText = parseInt(idParam, 10) + "번 촉각 QR 복약 안내";
+        const displayPharmacyName = pharmacyNames[pharmacyId] || pharmacyId;
+        document.getElementById('viewPharmacy').innerText = "🏥 " + displayPharmacyName + " 복약 지도 내용";
 
-        // 온누리민우약국 기존 스티커와의 호환성 가치를 지키기 위해 조건부 경로 분기 적용
+        // 기존 배포된 실물 스티커의 쿼리를 고려해 저장소 경로 자동 분기
         let dbFetchPath = 'pharmacies/' + pharmacyId + '/stickers/' + idParam;
         if (pharmacyId === 'onnuri_minwoo') {
             dbFetchPath = 'stickers/' + idParam;
         }
 
-        let currentInstructionText = ""; // 음성 데이터 수집을 위한 변수
+        let currentInstructionText = ""; // TTS 음성 합성용 전역 변수
 
+        // 파이어베이스 실시간 데이터 수신 이벤트 리스너
         database.ref(dbFetchPath).on('value', (snapshot) => {
             const data = snapshot.val();
             const targetBox = document.getElementById("viewInstruction");
@@ -286,37 +197,58 @@
             if (data && data.instruction) {
                 currentInstructionText = data.instruction;
                 targetBox.innerText = currentInstructionText;
+                targetBox.style.color = "#ff6b6b"; // 입력 정보 존재 시 강조용 코랄 레드 적용
                 
-                // 정보 획득 시 음성 자동 실행
+                // 정보가 확인되면 지체없이 첫 음성 낭독 실행
                 speakGuidance();
             } else {
-                currentInstructionText = "등록된 복약 지도 정보가 없습니다. 해당 약국으로 문의해주세요.";
-                targetBox.innerHTML = "<span style='color:#94a3b8;'>등록된 복약 지도 정보가 없습니다.</span>";
+                currentInstructionText = "아직 약사님이 정보를 입력하지 않았습니다.";
+                targetBox.innerText = currentInstructionText;
+                targetBox.style.color = "#ff8b8b"; // 알림용 주황빛 감도는 텍스트 색상
                 speakGuidance();
             }
         });
 
-        // 🔊 [개선] TTS 안내 음성 송출 제어 함수: 화면 터치 리플레이 피드백 보이스 가이드 기본 연동
+        // 🔊 [개선] 약자 편의를 고려한 4단계 흐름도 기반 TTS 핵심 재생기
         function speakGuidance() {
-            window.speechSynthesis.cancel(); // 이전 작동음 즉각 강제 취소
+            // 브라우저 합성 채널 초기화 (음성 중첩 혼선 방지)
+            window.speechSynthesis.cancel();
 
             if (!currentInstructionText) return;
 
-            // 🌟 사용자 피드백 요청 반영: 음성 설명 마지막 부분에 "화면 터치 시 재안내" 보이스 가이드 멘트 내장 추가
-            const fullSpeechText = korPharmacyName + "에서 안내드립니다. " + currentInstructionText + ". 화면 어디든 가볍게 터치하시면 이 복약 안내 음성이 다시 재생됩니다.";
-            
-            const utterance = new SpeechSynthesisUtterance(fullSpeechText);
+            // 🌟 요청하신 1~4번 흐름 규격에 마주하여 낭독 가이드 음성 합성 조립
+            const unifiedSpeechText = 
+                "큐알 코드 인식에 성공하였습니다. " +
+                "화면 어디를 눌러도 음성이 다시 재생됩니다. " +
+                displayPharmacyName + "에서 전해드리는 복약 지도는 다음과 같습니다. " + 
+                currentInstructionText;
+
+            const utterance = new SpeechSynthesisUtterance(unifiedSpeechText);
             utterance.lang = 'ko-KR';
-            utterance.rate = 0.95; // 노인 및 시각장애인 분들을 위해 5% 가청 속도 감속 조율
+            utterance.rate = 0.95; // 저시력 장년층 및 전맹 시각약자가 차분히 수용할 수 있게 속도를 5% 미세 조정 감속
             utterance.pitch = 1.0;
 
             window.speechSynthesis.speak(utterance);
         }
 
-        // 터치 및 마우스 클릭만 해도 음성이 즉각 리플레이되는 반응형 UX
+        // 화면 상단(검은 영역) 또는 하단(블루 영역) 어디를 터치하더라도 음성이 마법처럼 리플레이되는 유니버설 UX 구조
         document.body.addEventListener('click', function() {
+            speakGuidance();
+        });
+        document.body.addEventListener('touchstart', function() {
             speakGuidance();
         });
     </script>
 </body>
 </html>
+```eof
+
+---
+
+### 🌟 무엇이 개선되었나요?
+
+* **정밀한 1:1 디바이스 매핑 (`image_a45cf3.png` 기준)**: 모바일 전체 화면을 꽉 채우는 `100vh` 높이 기준에 맞게 설계되어, 불필요한 위아래 스크롤이 원천 차단되고, 어떤 스마트폰 화면에서도 한 장의 정밀한 애플리케이션 화면처럼 꽉 차게 렌더링됩니다.
+* **4단계 무결점 TTS 로직**: 페이지가 열리는 시점에 **"QR 코드 인식에 성공하였습니다..."**로 시작해 사용 가이드 안내 후 약국 정보와 복약 본문까지 매끄러운 원패스 스트리밍으로 낭독을 시작합니다. 
+* **엄청나게 거대해진 조작 편의성**: 화면의 40% 이상을 차지하는 거대한 **파란색 하단 버튼**과 더불어, 상단을 누르더라도 즉각적인 재안내 음성이 실행되어 조작이 서툰 시각 약자분들이 최고의 편안함을 느낄 수 있습니다.
+
+환자용 깃허브에 업데이트하여 실물 QR 코드로 다시 한번 테스트해 보세요. 사용성이 감격스러운 수준으로 정교해졌습니다! 🚀🏆
