@@ -2,102 +2,140 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>안전 복약 가이드</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>하이파이브 - 스마트 촉각 QR 복약 안내</title>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
     <style>
-        body { 
-            font-family: 'Pretendard', -apple-system, sans-serif; 
-            background-color: #121212; 
-            color: #ffffff; 
-            margin: 0; 
-            padding: 0; 
-            display: flex; 
-            flex-direction: column; 
-            height: 100vh; 
-            overflow: hidden; 
-            cursor: pointer; 
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
         }
-        .info-section { 
-            flex: 55; 
+
+        body {
+            font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+            background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+            background-attachment: fixed;
+            color: #0f172a;
+            min-height: 100vh;
             display: flex;
             flex-direction: column;
-            justify-content: center;
             align-items: center;
+            justify-content: center;
             padding: 20px;
+        }
+
+        /* 시각 약자 및 고령층을 배려한 고대비/대형 UI 디자인 */
+        .container {
+            width: 100%;
+            max-width: 500px;
+            background: #ffffff;
+            padding: 40px 30px;
+            border-radius: 28px;
+            box-shadow: 0 25px 50px -12px rgba(15, 23, 42, 0.15);
             text-align: center;
-            box-sizing: border-box;
+            border: 2px solid #bfdbfe;
         }
-        .badge { 
-            background: #27272a; 
-            color: #4ade80; 
-            padding: 8px 16px; 
-            border-radius: 20px; 
-            font-size: 18px; 
-            font-weight: bold; 
-            margin-bottom: 20px;
-        }
-        .status-text { 
-            font-size: 24px;
-            color: #a1a1aa;
-            margin-bottom: 10px;
-        }
-        .med-name {
-            font-size: 42px;
+
+        .logo-area {
+            font-size: 14px;
             font-weight: 800;
-            color: #ffffff;
-            margin: 15px 0;
-            word-break: keep-all;
+            color: #2563eb;
+            letter-spacing: 0.1em;
+            margin-bottom: 15px;
         }
-        .med-info {
-            font-size: 28px;
-            color: #e4e4e7;
-            line-height: 1.6;
-            margin-top: 15px;
-            white-space: pre-wrap;
-            word-break: keep-all;
-        }
-        .button-section {
-            flex: 45;
-            background-color: #1e1e24;
-            border-top: 2px solid #27272a;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            padding: 20px;
-            box-sizing: border-box;
-        }
-        .action-hint {
-            font-size: 34px;
-            font-weight: bold;
-            color: #4ade80;
-            text-align: center;
-            word-break: keep-all;
-        }
-        .sub-hint {
+
+        .pharmacy-name {
             font-size: 20px;
-            color: #71717a;
-            margin-top: 12px;
+            font-weight: 700;
+            color: #475569;
+            margin-bottom: 5px;
+        }
+
+        .sticker-number {
+            font-size: 28px;
+            font-weight: 900;
+            color: #1e40af;
+            margin-bottom: 25px;
+            background: #eff6ff;
+            display: inline-block;
+            padding: 6px 20px;
+            border-radius: 50px;
+        }
+
+        /* 복약 지도 내용 창: 눈이 어두우신 분들을 위해 글자 크기를 키우고 가독성 확보 */
+        .instruction-box {
+            background: #f8fafc;
+            border: 2px solid #e2e8f0;
+            border-radius: 16px;
+            padding: 25px;
+            min-height: 150px;
+            font-size: 20px;
+            font-weight: 600;
+            line-height: 1.6;
+            color: #1e293b;
+            text-align: left;
+            word-break: break-all;
+            margin-bottom: 30px;
+        }
+
+        /* 시각 약자를 위한 거대하고 누르기 쉬운 음성 다시듣기 버튼 */
+        .btn-tts {
+            width: 100%;
+            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+            color: white;
+            padding: 22px;
+            border: none;
+            border-radius: 16px;
+            font-size: 20px;
+            font-weight: 800;
+            cursor: pointer;
+            box-shadow: 0 10px 20px rgba(37, 99, 235, 0.25);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            transition: all 0.2s ease;
+        }
+
+        .btn-tts:hover {
+            background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+            transform: translateY(-2px);
+        }
+
+        .btn-tts:active {
+            transform: translateY(0);
+        }
+
+        .status-text {
+            font-size: 14px;
+            color: #94a3b8;
+            margin-top: 15px;
+            font-weight: 500;
         }
     </style>
 </head>
 <body>
 
-    <div class="info-section">
-        <div class="badge" id="sticker-badge">약 번호 확인 중</div>
-        <div class="status-text" id="status-label">안내를 시작하려면 화면을 터치하세요</div>
-        <div class="med-name" id="med-title">복약 가이드</div>
-        <div class="med-info" id="med-details">화면 아무 곳이나 가볍게 누르시면 음성 복약 안내가 시작됩니다.</div>
-    </div>
-
-    <div class="button-section">
-        <div class="action-hint">🔊 화면 어디든 누르면 다시 재생</div>
-        <div class="sub-hint">손끝 닿는 곳 전체가 터치 버튼입니다</div>
+    <div class="container">
+        <div class="logo-area">🔊 HI-FIVE AUDIO GUIDE</div>
+        <div class="pharmacy-name" id="viewPharmacy">약국 연결 중...</div>
+        <div class="sticker-number" id="viewSticker">- 번 스티커</div>
+        
+        <div class="instruction-box" id="viewInstruction">
+            복약 안내 정보를 불러오는 중입니다...
+        </div>
+        
+        <button class="btn-tts" onclick="speakGuidance()">
+            <span>🔊 복약 안내 다시듣기</span>
+        </button>
+        
+        <div class="status-text">화면을 터치하시면 음성이 다시 재생됩니다.</div>
     </div>
 
     <script>
+        // 1. 파이어베이스 설정 (약사 대시보드와 완벽히 동일한 DB 연동)
         const firebaseConfig = {
             apiKey: "AIzaSyCKcCMOT9OwFkkKm0Ot3StOFuDpimOCbNs",
             authDomain: "tactile-qr-code-sticker.firebaseapp.com",
@@ -107,58 +145,78 @@
             messagingSenderId: "456709355304",
             appId: "1:456709355304:web:eb1ba4148b0398a8f6c21d"
         };
-
         firebase.initializeApp(firebaseConfig);
         const database = firebase.database();
 
-        let guideText = "복약 정보를 불러오는 중입니다.";
-        let isFirstClick = true;
+        // 2. 약국 한글 명칭 맵 (음성 안내 시 "온누리민우약국 안내입니다" 라고 읽어주기 위함)
+        const pharmacyNames = {
+            "onnuri_minwoo": "온누리민우약국",
+            "dolgoji": "돌곶이약국",
+            "wellbeing": "성북웰빙약국",
+            "beautiful": "아름다운약국"
+        };
 
+        // 3. URL 파라미터 조율 (?p=약국코드&id=스티커번호 파싱)
         const urlParams = new URLSearchParams(window.location.search);
-        let stickerId = urlParams.get('id') || "001"; 
-        
-        document.getElementById('sticker-badge').innerText = `약 번호: ${stickerId}`;
+        const pParam = urlParams.get('p');
+        const idParam = urlParams.get('id') || '001'; // 스티커 번호가 누락되면 001을 기본값으로 타겟팅
 
-        database.ref('stickers/' + stickerId).on('value', (snapshot) => {
+        // 만약 주소창에 ?p= 가 아예 없으면 기본값을 'onnuri_minwoo'로 선언하여 온누리민우약국 기존 스티커 완벽 호환 보장
+        let pharmacyId = pParam ? pParam.trim() : 'onnuri_minwoo';
+
+        // 4. 화면 텍스트 바인딩
+        const displayPharmacyName = pharmacyNames[pharmacyId] || pharmacyId;
+        document.getElementById('viewPharmacy').innerText = displayPharmacyName;
+        document.getElementById('viewSticker').innerText = parseInt(idParam, 10) + "번 스티커 복약 안내";
+
+        // 5. [핵심] 하이브리드 경로 필터링
+        // 온누리민우약국은 기존의 'stickers/001' 경로를 읽고, 신규 약국들은 격리된 'pharmacies/약국ID/stickers/001' 경로를 역추적
+        let dbFetchPath = 'pharmacies/' + pharmacyId + '/stickers/' + idParam;
+        if (pharmacyId === 'onnuri_minwoo') {
+            dbFetchPath = 'stickers/' + idParam;
+        }
+
+        let currentInstruction = ""; // 음성 재생용 글로벌 변수
+
+        // 6. 실시간 파이어베이스 데이터 조회
+        database.ref(dbFetchPath).on('value', (snapshot) => {
             const data = snapshot.val();
+            const targetEl = document.getElementById("viewInstruction");
             
-            if (data) {
-                const infoText = data.instruction || "등록된 복약 지도 내용이 없습니다.";
-                guideText = infoText;
-                document.getElementById('med-title').innerText = `${stickerId}번 약 안내`;
-                document.getElementById('med-details').innerText = infoText;
-                document.getElementById('status-label').innerText = "복약 안내 준비 완료";
+            if (data && data.instruction) {
+                currentInstruction = data.instruction;
+                targetEl.innerText = currentInstruction;
+                
+                // 데이터 로드가 완료되면 첫 안내 음성을 자동으로 즉시 실행!
+                speakGuidance();
             } else {
-                guideText = "등록되지 않은 약 스티커 번호입니다. 조제 받으신 약국에 문의해 주세요.";
-                document.getElementById('med-title').innerText = "약 정보 없음";
-                document.getElementById('med-details').innerText = guideText;
-                document.getElementById('status-label').innerText = "조회 실패";
+                currentInstruction = "등록된 복약 안내 정보가 없습니다. 약사님께 문의해주세요.";
+                targetEl.innerHTML = "<span style='color:#94a3b8;'>등록된 복약 안내 정보가 없습니다.</span>";
+                speakGuidance();
             }
         });
 
-        function playTTS(text) {
+        // 7. 🔊 시각 약자를 위한 스마트 보이스 TTS(Text-to-Speech) 핵심 내장 함수
+        function speakGuidance() {
+            // 브라우저에 구동 중인 이전 음성이 있다면 혼선 방지를 위해 즉시 강제 멈춤 처리
             window.speechSynthesis.cancel();
-            const utterance = new SpeechSynthesisUtterance(text);
-            utterance.lang = 'ko-KR';
-            utterance.rate = 0.75; 
+
+            if (!currentInstruction) return;
+
+            // 약국 명칭을 포함하여 훨씬 친절하고 정돈된 멘트로 음성 가이드를 재구성
+            const textToSpeak = displayPharmacyName + "에서 안내드립니다. " + currentInstruction;
+            
+            const utterance = new SpeechSynthesisUtterance(textToSpeak);
+            utterance.lang = 'ko-KR'; // 대한민국 표준 voice 매핑
+            utterance.rate = 0.95;    // 시각 약자 및 고령층분들이 놓치지 않고 명확히 들을 수 있도록 속도를 5% 가량 미세하게 감속 조율
+            utterance.pitch = 1.0;    // 가장 안정감을 느끼는 표준 주파수 톤 고정
+
             window.speechSynthesis.speak(utterance);
         }
 
+        // 스마트폰 화면 어디든 터치만 해도 음성이 다시 나오는 UX 편의 장치 기본 탑재
         document.body.addEventListener('click', function() {
-            if (navigator.vibrate) {
-                navigator.vibrate(200);
-            }
-
-            // ✨ [업데이트]: 환자가 QR 스캔 후 화면을 처음 만졌을 때 유저 요구사항 반영
-            if (isFirstClick) {
-                const welcomeText = "화면 어디를 눌러도 음성이 나옵니다! 큐알 코드가 인식되었습니다. " + guideText;
-                playTTS(welcomeText);
-                isFirstClick = false;
-                document.getElementById('status-label').innerText = "🔊 현재 복약 정보 재생 중";
-            } else {
-                // 두 번째 터치부터는 불필요한 인트로 없이 깔끔하게 복약 정보만 반복 재생
-                playTTS(guideText);
-            }
+            speakGuidance();
         });
     </script>
 </body>
