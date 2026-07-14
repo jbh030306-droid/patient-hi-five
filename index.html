@@ -200,7 +200,6 @@
                 // 앱 실행 후 데이터를 처음 조회했을 때만 전체 안내(true) 실행
                 if (!hasPlayedIntro) {
                     speakGuidance(true);
-                    hasPlayedIntro = true;
                 } else {
                     speakGuidance(false);
                 }
@@ -211,7 +210,6 @@
                 
                 if (!hasPlayedIntro) {
                     speakGuidance(true);
-                    hasPlayedIntro = true;
                 } else {
                     speakGuidance(false);
                 }
@@ -227,7 +225,7 @@
 
             let unifiedSpeechText = "";
 
-            if (isFirst) {
+            if (isFirst && !hasPlayedIntro) {
                 // 🌟 최초 1회 접속 시에만 규정대로 전체 흐름(1~4단계) 친절하게 재생
                 unifiedSpeechText = 
                     "큐알 코드 인식에 성공하였습니다. " +
@@ -244,6 +242,12 @@
             utterance.rate = 0.95; // 장년층 및 전맹 시각약자가 안전하게 수용하도록 속도를 5% 감속 조율
             utterance.pitch = 1.0;
 
+            // [핵심 보완] 음성이 실제로 정상 송출되기 시작했을 때만 안내 완료 플래그를 true로 활성화!
+            // 브라우저의 오토플레이 정책에 차단당했다면 이 이벤트가 실행되지 않아 다음 클릭 시 첫 안내를 정상적으로 듣게 됩니다.
+            utterance.onstart = function() {
+                hasPlayedIntro = true;
+            };
+
             window.speechSynthesis.speak(utterance);
         }
 
@@ -256,7 +260,13 @@
             if (e.type === 'touchstart') {
                 lastTouchTime = now;
             }
-            speakGuidance(false); // 재안내를 수동으로 요청한 것이므로 '본문'만 신속하게 재생
+            
+            // 만약 브라우저 차단 때문에 첫 소리를 듣지 못했다면 첫 안내를 재생하고, 이미 성공했다면 본문만 재생
+            if (!hasPlayedIntro) {
+                speakGuidance(true);
+            } else {
+                speakGuidance(false);
+            }
         }
 
         // 화면 상/하단 어디를 눌러도 본문 복약 지도를 즉각 재수신할 수 있도록 바인딩
