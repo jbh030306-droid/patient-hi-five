@@ -8,7 +8,6 @@
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
     
-    <!-- STREAMING_CHUNK:Designing full-screen layout tokens... -->
     <style>
         /* 기본 레이아웃 초기화: 스크롤을 완전히 없애고 모바일 전체 화면(100vh)에 고정 */
         * {
@@ -71,7 +70,7 @@
             letter-spacing: 0.05em;
         }
 
-        /* 🌟 [개선] 저시력자를 위한 초고대비/슈퍼 사이즈 폰트 (눈이 어두우신 분도 돋보기 없이 즉시 식별 가능) */
+        /* 저시력자를 위한 초고대비/슈퍼 사이즈 폰트 */
         .instruction-text {
             font-size: 32px;
             font-weight: 800;
@@ -127,7 +126,6 @@
 </head>
 <body>
 
-    <!-- STREAMING_CHUNK: Creating high-contrast UI structure... -->
     <div class="viewport-wrapper">
         
         <!-- 상단: 고대비 정보 노출 영역 (60%) -->
@@ -140,14 +138,13 @@
         </div>
 
         <!-- 하단: 거대 터치 패널 (40%) -->
-        <div class="bottom-section" onclick="speakGuidance()">
+        <div class="bottom-section">
             <div class="speaker-icon">🔊</div>
             <div class="touch-guide-text">화면 아래를 눌러 다시 듣기</div>
         </div>
 
     </div>
 
-    <!-- STREAMING_CHUNK: Initializing Firebase & TTS engine... -->
     <script>
         // 파이어베이스 데이터베이스 설정
         const firebaseConfig = {
@@ -188,6 +185,7 @@
         }
 
         let currentInstructionText = ""; // TTS 음성 합성용 전역 변수
+        let hasPlayedIntro = false;      // 최초 진입 1회용 안내 추적 제어 변수
 
         // 파이어베이스 실시간 데이터 수신 이벤트 리스너
         database.ref(dbFetchPath).on('value', (snapshot) => {
@@ -199,56 +197,71 @@
                 targetBox.innerText = currentInstructionText;
                 targetBox.style.color = "#ff6b6b"; // 입력 정보 존재 시 강조용 코랄 레드 적용
                 
-                // 정보가 확인되면 지체없이 첫 음성 낭독 실행
-                speakGuidance();
+                // 앱 실행 후 데이터를 처음 조회했을 때만 전체 안내(true) 실행
+                if (!hasPlayedIntro) {
+                    speakGuidance(true);
+                    hasPlayedIntro = true;
+                } else {
+                    speakGuidance(false);
+                }
             } else {
                 currentInstructionText = "아직 약사님이 정보를 입력하지 않았습니다.";
                 targetBox.innerText = currentInstructionText;
                 targetBox.style.color = "#ff8b8b"; // 알림용 주황빛 감도는 텍스트 색상
-                speakGuidance();
+                
+                if (!hasPlayedIntro) {
+                    speakGuidance(true);
+                    hasPlayedIntro = true;
+                } else {
+                    speakGuidance(false);
+                }
             }
         });
 
-        // 🔊 [개선] 약자 편의를 고려한 4단계 흐름도 기반 TTS 핵심 재생기
-        function speakGuidance() {
+        // 🔊 [개선] 최초 실행(isFirst = true)과 재안내(isFirst = false)를 구분하는 흐름 기반 TTS 제어기
+        function speakGuidance(isFirst = false) {
             // 브라우저 합성 채널 초기화 (음성 중첩 혼선 방지)
             window.speechSynthesis.cancel();
 
             if (!currentInstructionText) return;
 
-            // 🌟 요청하신 1~4번 흐름 규격에 마주하여 낭독 가이드 음성 합성 조립
-            const unifiedSpeechText = 
-                "큐알 코드 인식에 성공하였습니다. " +
-                "화면 어디를 눌러도 음성이 다시 재생됩니다. " +
-                displayPharmacyName + "에서 전해드리는 복약 지도는 다음과 같습니다. " + 
-                currentInstructionText;
+            let unifiedSpeechText = "";
+
+            if (isFirst) {
+                // 🌟 최초 1회 접속 시에만 규정대로 전체 흐름(1~4단계) 친절하게 재생
+                unifiedSpeechText = 
+                    "큐알 코드 인식에 성공하였습니다. " +
+                    "화면 어디를 눌러도 음성이 다시 재생됩니다. " +
+                    displayPharmacyName + "에서 전해드리는 복약 지도는 다음과 같습니다. " + 
+                    currentInstructionText;
+            } else {
+                // 🌟 사용자가 화면을 터치해 재안내를 요청했을 때는 서론 없이 "복약지도 내용"만 빠르게 낭독
+                unifiedSpeechText = currentInstructionText;
+            }
 
             const utterance = new SpeechSynthesisUtterance(unifiedSpeechText);
             utterance.lang = 'ko-KR';
-            utterance.rate = 0.95; // 저시력 장년층 및 전맹 시각약자가 차분히 수용할 수 있게 속도를 5% 미세 조정 감속
+            utterance.rate = 0.95; // 장년층 및 전맹 시각약자가 안전하게 수용하도록 속도를 5% 감속 조율
             utterance.pitch = 1.0;
 
             window.speechSynthesis.speak(utterance);
         }
 
-        // 화면 상단(검은 영역) 또는 하단(블루 영역) 어디를 터치하더라도 음성이 마법처럼 리플레이되는 유니버설 UX 구조
-        document.body.addEventListener('click', function() {
-            speakGuidance();
-        });
-        document.body.addEventListener('touchstart', function() {
-            speakGuidance();
-        });
+        // 터치 디바이스에서 touchstart와 click이 동시에 감지되어 재생음이 두 번 부딪히는 현상 방지 필터
+        let lastTouchTime = 0;
+        function handleInteraction(e) {
+            const now = Date.now();
+            if (now - lastTouchTime < 400) return; // 0.4초 이내의 다중 호출을 차단해 버그 차단
+            
+            if (e.type === 'touchstart') {
+                lastTouchTime = now;
+            }
+            speakGuidance(false); // 재안내를 수동으로 요청한 것이므로 '본문'만 신속하게 재생
+        }
+
+        // 화면 상/하단 어디를 눌러도 본문 복약 지도를 즉각 재수신할 수 있도록 바인딩
+        document.body.addEventListener('click', handleInteraction);
+        document.body.addEventListener('touchstart', handleInteraction);
     </script>
 </body>
 </html>
-```eof
-
----
-
-### 🌟 무엇이 개선되었나요?
-
-* **정밀한 1:1 디바이스 매핑 (`image_a45cf3.png` 기준)**: 모바일 전체 화면을 꽉 채우는 `100vh` 높이 기준에 맞게 설계되어, 불필요한 위아래 스크롤이 원천 차단되고, 어떤 스마트폰 화면에서도 한 장의 정밀한 애플리케이션 화면처럼 꽉 차게 렌더링됩니다.
-* **4단계 무결점 TTS 로직**: 페이지가 열리는 시점에 **"QR 코드 인식에 성공하였습니다..."**로 시작해 사용 가이드 안내 후 약국 정보와 복약 본문까지 매끄러운 원패스 스트리밍으로 낭독을 시작합니다. 
-* **엄청나게 거대해진 조작 편의성**: 화면의 40% 이상을 차지하는 거대한 **파란색 하단 버튼**과 더불어, 상단을 누르더라도 즉각적인 재안내 음성이 실행되어 조작이 서툰 시각 약자분들이 최고의 편안함을 느낄 수 있습니다.
-
-환자용 깃허브에 업데이트하여 실물 QR 코드로 다시 한번 테스트해 보세요. 사용성이 감격스러운 수준으로 정교해졌습니다! 🚀🏆
