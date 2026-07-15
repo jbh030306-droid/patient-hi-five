@@ -32,7 +32,7 @@
 
         <div class="bottom-section" id="playButton">
             <div class="speaker-icon">🔊</div>
-            <div class="touch-guide-text">화면을 터치하면 안내가 즉시 시작됩니다</div>
+            <div class="touch-guide-text">화면을 한 번 터치하면 안내가 시작됩니다</div>
         </div>
     </div>
 
@@ -59,10 +59,8 @@
         document.getElementById('viewPharmacy').innerText = "🏥 " + pharmacyId + " 복약 지도";
 
         let dbFetchPath = 'pharmacies/' + pharmacyId + '/stickers/' + idParam;
-
-        let currentInstructionText = "복약 정보를 안전하게 불러왔습니다."; 
-        let introPlayed = false;     // 인트로가 실제로 정상 송출 완료되었는지 판단하는 변수
-        let lastClickTime = 0;       // 과도한 연타 버그 방어용 타임스탬프
+        let currentInstructionText = "복약 정보를 성공적으로 불러왔습니다."; 
+        let isFirstPlay = true; // 최초 1회만 긴 안내방송을 틀기 위한 관리 플래그
 
         // 파이어베이스 실시간 수신 리스너
         database.ref(dbFetchPath).on('value', (snapshot) => {
@@ -79,64 +77,40 @@
             }
         });
 
-        // 🌟 [엔진 개조] 모바일 환경 전용 초정밀 재생 함수
-        function speak(playFullIntro) {
-            // 1. 모바일 기기의 브라우저 음성 엔진이 일시 정지(Stuck) 상태라면 강제로 깨우기
+        // 🌟 [모바일 완전 정복] 1터치 즉시 재생 코어 함수
+        function handlePlay() {
+            // 1. 모바일 기기가 대기 상태로 잠겨있다면 무조건 강제 깨우기 실행
             if (window.speechSynthesis.paused) {
                 window.speechSynthesis.resume();
             }
-
-            // 2. 다른 소리가 이미 켜져 있는 상태에서 재터치했을 때만 이전 소리를 취소하여 꼬임 방지
-            if (window.speechSynthesis.speaking) {
-                window.speechSynthesis.cancel();
-            }
+            
+            // 2. 굳어있거나 꼬여있는 기존 모바일 음성 버그 엔진을 무조건 선제적으로 깨끗이 초기화!
+            window.speechSynthesis.cancel(); 
 
             let speechText = "";
-            if (!playFullIntro) {
-                // 인트로를 이미 완벽하게 들은 상태에서의 연속 재터치는 본문만 딜레이 없이 즉각 출력!
-                speechText = currentInstructionText;
-            } else {
-                // 최초 1회 터치 시에만 사려 깊은 인트로 안내 음성 결합 낭독
+            if (isFirstPlay) {
+                // 최초 터치 시에만 사려 깊은 안내 문구 결합 송출
                 speechText = `큐알 코드 인식에 성공하였습니다. 화면 어디를 눌러도 음성이 다시 재생됩니다. ${pharmacyId}에서 전해드리는 복약 지도 내용입니다. ${currentInstructionText}`;
+                isFirstPlay = false; // 플래그 오프
+            } else {
+                // 두 번째 터치부터는 알맹이 복약 가이드만 즉시 0초 만에 낭독!
+                speechText = currentInstructionText;
             }
 
             const utterance = new SpeechSynthesisUtterance(speechText);
             utterance.lang = 'ko-KR';
-            utterance.rate = 0.95; // 복약 지도를 가장 또박또박 들을 수 있는 최적의 속도 배율
+            utterance.rate = 0.95; // 시각 약자분들이 인지하기 가장 정갈한 속도 비율
             utterance.pitch = 1.0;
 
-            // 실제로 스마트폰 스피커에서 소리가 출력되기 시작하는 순간 플래그 고정!
-            utterance.onstart = function() {
-                introPlayed = true; 
-            };
-
+            // 최종 낭독 명령 하달
             window.speechSynthesis.speak(utterance);
         }
 
-        // 🌟 [유령 클릭 살상 제어기] 모바일 터치 이벤트 제어 핸들러
-        function handleTouchPlay(e) {
-            const now = Date.now();
-            // 0.6초(600ms) 이내에 마구잡이로 들어오는 무의미한 연타 클릭 요청 필터링
-            if (now - lastClickTime < 600) return; 
-            lastClickTime = now;
-
-            // 🌟 [가장 중요] 모바일 touchstart 시점 이후에 잇따라 발생하는 0.3초 뒤의 유령 click 이벤트를 브라우저 단에서 완전 사살!
-            if (e && e.cancelable) {
-                e.preventDefault();
-            }
-
-            // 본 진입 낭독 명령 하달
-            speak(!introPlayed);
-        }
-
-        // 스마트폰용 touchstart와 일반 PC용 click 이벤트를 이중 결합하되, 터치 시 후속 이벤트를 무력화
-        const playBtn = document.getElementById('playButton');
-        playBtn.addEventListener('touchstart', handleTouchPlay, { passive: false });
-        playBtn.addEventListener('click', handleTouchPlay);
-        
-        // 유저가 화면 전체 어디든 쉽게 눌러 들을 수 있게 바디 영역에도 동일 가드 탑재
-        document.body.addEventListener('touchstart', handleTouchPlay, { passive: false });
-        document.body.addEventListener('click', handleTouchPlay);
+        // 🌟 [표준 회귀] 유령 클릭 방지용 무력화 코드가 오히려 오디오 잠금 해제를 막았던 부작용을 해결하기 위해,
+        // 구글/애플이 100% 신뢰하는 순수 표준 클릭 이벤트 하나로만 통합 바인딩합니다.
+        // (meta 태그의 user-scalable=no 덕분에 모바일에서도 클릭 반응 속도는 즉각적입니다.)
+        document.getElementById('playButton').addEventListener('click', handlePlay);
+        document.body.addEventListener('click', handlePlay);
     </script>
 </body>
 </html>
