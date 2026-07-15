@@ -4,149 +4,38 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>하이파이브 - 스마트 촉각 QR 복약 안내</title>
-    <!-- 파이어베이스 SDK 연동 -->
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
-    
     <style>
-        /* 기본 레이아웃 초기화: 스크롤을 완전히 없애고 모바일 전체 화면(100vh)에 고정 */
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-            user-select: none;
-            -webkit-user-select: none;
-        }
-
-        html, body {
-            width: 100%;
-            height: 100%;
-            overflow: hidden;
-            background-color: #121212;
-            font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
-        }
-
-        /* 스마트폰 화면을 상단(정보 노출: 60%)과 하단(터치 컨트롤: 40%) 영역으로 분할 */
-        .viewport-wrapper {
-            display: flex;
-            flex-direction: column;
-            width: 100%;
-            height: 100vh;
-        }
-
-        /* 1. 상단 정보 노출 영역 (딥 블랙 테마로 명도대비 극대화) */
-        .top-section {
-            flex: 6.2;
-            background-color: #121212;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            padding: 40px 24px;
-            text-align: center;
-            position: relative;
-        }
-
-        /* 성북구 약사회 시범운영 캡슐 배지 */
-        .badge {
-            background-color: rgba(16, 185, 129, 0.15);
-            color: #10b981;
-            padding: 8px 18px;
-            border-radius: 50px;
-            font-size: 15px;
-            font-weight: 700;
-            margin-bottom: 25px;
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            border: 1px solid rgba(16, 185, 129, 0.3);
-        }
-
-        .section-label {
-            color: #94a3b8;
-            font-size: 18px;
-            font-weight: 700;
-            margin-bottom: 20px;
-            letter-spacing: 0.05em;
-        }
-
-        /* 저시력자를 위한 초고대비/슈퍼 사이즈 폰트 */
-        .instruction-text {
-            font-size: 32px;
-            font-weight: 800;
-            line-height: 1.5;
-            color: #ff6b6b; /* 높은 채도의 코랄 레드 색상으로 강력한 명시성 제공 */
-            max-width: 90%;
-            word-break: keep-all;
-            text-align: center;
-            letter-spacing: -0.02em;
-        }
-
-        /* 2. 하단 대형 스피커/터치 제어 영역 (선명한 로열 블루 테마) */
-        .bottom-section {
-            flex: 3.8;
-            background-color: #2563eb;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            padding: 24px;
-            cursor: pointer;
-            transition: background-color 0.2s ease;
-            position: relative;
-            box-shadow: 0 -10px 30px rgba(0, 0, 0, 0.3);
-        }
-
-        .bottom-section:active {
-            background-color: #1d4ed8; /* 터치 시 확실한 시각 피드백 */
-        }
-
-        /* 거대한 3D 입체 스피커 애니메이션 아이콘 */
-        .speaker-icon {
-            font-size: 76px;
-            margin-bottom: 12px;
-            filter: drop-shadow(0 4px 10px rgba(0,0,0,0.2));
-            animation: pulse 2s infinite;
-        }
-
-        .touch-guide-text {
-            color: #ffffff;
-            font-size: 24px;
-            font-weight: 800;
-            letter-spacing: -0.03em;
-            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-        }
-
-        @keyframes pulse {
-            0% { transform: scale(1); }
-            50% { transform: scale(1.06); }
-            100% { transform: scale(1); }
-        }
+        * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; -webkit-user-select: none; }
+        html, body { width: 100%; height: 100%; overflow: hidden; background-color: #121212; font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, sans-serif; }
+        .viewport-wrapper { display: flex; flex-direction: column; width: 100%; height: 100vh; }
+        .top-section { flex: 6.2; background-color: #121212; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 40px 24px; text-align: center; position: relative; }
+        .badge { background-color: rgba(16, 185, 129, 0.15); color: #10b981; padding: 8px 18px; border-radius: 50px; font-size: 15px; font-weight: 700; margin-bottom: 25px; display: inline-flex; align-items: center; gap: 6px; border: 1px solid rgba(16, 185, 129, 0.3); }
+        .section-label { color: #94a3b8; font-size: 18px; font-weight: 700; margin-bottom: 20px; letter-spacing: 0.05em; }
+        .instruction-text { font-size: 32px; font-weight: 800; line-height: 1.5; color: #ff6b6b; max-width: 90%; word-break: keep-all; text-align: center; letter-spacing: -0.02em; }
+        .bottom-section { flex: 3.8; background-color: #2563eb; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 24px; cursor: pointer; transition: background-color 0.2s ease; position: relative; box-shadow: 0 -10px 30px rgba(0, 0, 0, 0.3); }
+        .bottom-section:active { background-color: #1d4ed8; }
+        .speaker-icon { font-size: 76px; margin-bottom: 12px; filter: drop-shadow(0 4px 10px rgba(0,0,0,0.2)); animation: pulse 2s infinite; }
+        .touch-guide-text { color: #ffffff; font-size: 24px; font-weight: 800; letter-spacing: -0.03em; text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2); }
+        @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.06); } 100% { transform: scale(1); } }
     </style>
 </head>
 <body>
 
     <div class="viewport-wrapper">
-        
-        <!-- 상단: 고대비 정보 노출 영역 (60%) -->
         <div class="top-section">
             <div class="badge">✓ 성북구 약사회 시범운영</div>
             <div class="section-label" id="viewPharmacy">연결 중...</div>
-            <div class="instruction-text" id="viewInstruction">
-                복약 정보를 가져오고 있습니다...
-            </div>
+            <div class="instruction-text" id="viewInstruction">복약 정보를 가져오고 있습니다...</div>
         </div>
-
-        <!-- 하단: 거대 터치 패널 (40%) -->
-        <div class="bottom-section">
+        <div class="bottom-section" onclick="handleTouchPlay()">
             <div class="speaker-icon">🔊</div>
             <div class="touch-guide-text">화면 아래를 눌러 다시 듣기</div>
         </div>
-
     </div>
 
     <script>
-        // 파이어베이스 데이터베이스 설정
         const firebaseConfig = {
             apiKey: "AIzaSyCKcCMOT9OwFkkKm0Ot3StOFuDpimOCbNs",
             authDomain: "tactile-qr-code-sticker.firebaseapp.com",
@@ -159,35 +48,58 @@
         firebase.initializeApp(firebaseConfig);
         const database = firebase.database();
 
-        // 등록된 지역 약국 목록 매핑
-        const pharmacyNames = {
-            "onnuri_minwoo": "온누리민우약국",
-            "dolgoji": "돌곶이약국",
-            "wellbeing": "성북웰빙약국",
-            "beautiful": "아름다운약국"
-        };
-
-        // 주소창 파라미터 파싱 (?p=약국코드&id=스티커번호)
         const urlParams = new URLSearchParams(window.location.search);
-        const pParam = urlParams.get('p');
+        let pharmacyId = urlParams.get('p') || '온누리민우약국';
         const idParam = urlParams.get('id') || '001';
 
-        // 약국 ID 미지정 시 온누리민우약국으로 자동 대체하여 호환성 사수
-        let pharmacyId = pParam ? pParam.trim() : 'onnuri_minwoo';
+        const cleanId = pharmacyId.replace(/\s+/g, '').toLowerCase();
+        if (cleanId === 'onnuri_minwoo' || cleanId === '온누리민우약국') { pharmacyId = '온누리민우약국'; }
 
-        const displayPharmacyName = pharmacyNames[pharmacyId] || pharmacyId;
-        document.getElementById('viewPharmacy').innerText = "🏥 " + displayPharmacyName + " 복약 지도 내용";
+        document.getElementById('viewPharmacy').innerText = "🏥 " + pharmacyId + " 복약 지도 내용";
 
-        // 기존 배포된 실물 스티커의 쿼리를 고려해 저장소 경로 자동 분기
         let dbFetchPath = 'pharmacies/' + pharmacyId + '/stickers/' + idParam;
-        if (pharmacyId === 'onnuri_minwoo') {
-            dbFetchPath = 'stickers/' + idParam;
+
+        let currentInstructionText = ""; 
+        let firebaseReady = false;   // 파이어베이스 데이터 수신 완료 여부
+        let introFinished = false;   // 인트로 안내 방송 종료 여부
+        let hasStartedPlaying = false; // 첫 로드 음성 시동 여부
+
+        // 🌟 [엔진 웜업] 웹 오디오 브라우저 큐 미리 활성화
+        if (window.speechSynthesis) { window.speechSynthesis.getVoices(); }
+
+        // 🌟 [개선 핵심] 파이어베이스 네트워크를 기다리지 않고 진입 즉시 인트로 방송 송출!
+        function startStreamingGuidance() {
+            if (hasStartedPlaying) return;
+            hasStartedPlaying = true;
+
+            window.speechSynthesis.cancel(); // 큐 클리어
+
+            // 1. 고정 안내 방송 즉시 재생 (네트워크 대기 시간 제거용)
+            const introText = `큐알 코드 인식에 성공하였습니다. 화면 어디를 눌러도 음성이 다시 재생됩니다. ${pharmacyId}에서 전해드리는 복약 지도 내용입니다.`;
+            const utteranceIntro = new SpeechSynthesisUtterance(introText);
+            utteranceIntro.lang = 'ko-KR';
+            utteranceIntro.rate = 1.0;
+
+            // 인트로 방송이 끝났을 때의 콜백 제어
+            utteranceIntro.onend = function() {
+                introFinished = true;
+                playContentBody(); // 본문 낭독으로 바톤 터치
+            };
+
+            window.speechSynthesis.speak(utteranceIntro);
         }
 
-        let currentInstructionText = ""; // TTS 음성 합성용 전역 변수
-        let hasPlayedIntro = false;      // 최초 진입 1회용 안내 추적 제어 변수
+        // 2. 파이어베이스 본문 복약 지도 내용 재생
+        function playContentBody() {
+            if (!introFinished || !firebaseReady) return; // 두 조건이 모두 만족할 때만 재생
 
-        // 파이어베이스 실시간 데이터 수신 이벤트 리스너
+            const utteranceBody = new SpeechSynthesisUtterance(currentInstructionText);
+            utteranceBody.lang = 'ko-KR';
+            utteranceBody.rate = 0.95; // 본문은 명확하게 0.95 속도 유지
+            window.speechSynthesis.speak(utteranceBody);
+        }
+
+        // 파이어베이스 실시간 수신 리스너
         database.ref(dbFetchPath).on('value', (snapshot) => {
             const data = snapshot.val();
             const targetBox = document.getElementById("viewInstruction");
@@ -195,83 +107,47 @@
             if (data && data.instruction) {
                 currentInstructionText = data.instruction;
                 targetBox.innerText = currentInstructionText;
-                targetBox.style.color = "#ff6b6b"; // 입력 정보 존재 시 강조용 코랄 레드 적용
-                
-                // 앱 실행 후 데이터를 처음 조회했을 때만 전체 안내(true) 실행
-                if (!hasPlayedIntro) {
-                    speakGuidance(true);
-                } else {
-                    speakGuidance(false);
-                }
+                targetBox.style.color = "#ff6b6b"; 
             } else {
                 currentInstructionText = "아직 약사님이 정보를 입력하지 않았습니다.";
                 targetBox.innerText = currentInstructionText;
-                targetBox.style.color = "#ff8b8b"; // 알림용 주황빛 감도는 텍스트 색상
-                
-                if (!hasPlayedIntro) {
-                    speakGuidance(true);
-                } else {
-                    speakGuidance(false);
-                }
+                targetBox.style.color = "#ff8b8b";
+            }
+            
+            firebaseReady = true;
+            
+            // 만약 인트로 방송이 이미 끝난 상태에서 뒤늦게 DB가 로드되었다면 즉시 본문 실행
+            if (introFinished) {
+                playContentBody();
             }
         });
 
-        // 🔊 [개선] 최초 실행(isFirst = true)과 재안내(isFirst = false)를 구분하는 흐름 기반 TTS 제어기
-        function speakGuidance(isFirst = false) {
-            // 브라우저 합성 채널 초기화 (음성 중첩 혼선 방지)
-            window.speechSynthesis.cancel();
+        // 🌟 [모바일 최적화 안전장치] 
+        // 크롬/사파리 등 스마트폰 브라우저는 '첫 터치'가 일어나기 전까지 음성을 강제로 막는 보안 정책(Autoplay Policy)이 있습니다.
+        // 이를 깨부수기 위해, 진입하자마자 자동 재생을 시도하되 만약 막히더라도 환자가 화면을 터치하는 순간 '대기시간 0초'로 즉시 터져 나오게 이중 설계했습니다.
+        window.addEventListener('DOMContentLoaded', () => {
+            setTimeout(() => { startStreamingGuidance(); }, 100);
+        });
 
-            if (!currentInstructionText) return;
-
-            let unifiedSpeechText = "";
-
-            if (isFirst && !hasPlayedIntro) {
-                // 🌟 최초 1회 접속 시에만 규정대로 전체 흐름(1~4단계) 친절하게 재생
-                unifiedSpeechText = 
-                    "큐알 코드 인식에 성공하였습니다. " +
-                    "화면 어디를 눌러도 음성이 다시 재생됩니다. " +
-                    displayPharmacyName + "에서 전해드리는 복약 지도는 다음과 같습니다. " + 
-                    currentInstructionText;
-            } else {
-                // 🌟 사용자가 화면을 터치해 재안내를 요청했을 때는 서론 없이 "복약지도 내용"만 빠르게 낭독
-                unifiedSpeechText = currentInstructionText;
-            }
-
-            const utterance = new SpeechSynthesisUtterance(unifiedSpeechText);
-            utterance.lang = 'ko-KR';
-            utterance.rate = 0.95; // 장년층 및 전맹 시각약자가 안전하게 수용하도록 속도를 5% 감속 조율
-            utterance.pitch = 1.0;
-
-            // [핵심 보완] 음성이 실제로 정상 송출되기 시작했을 때만 안내 완료 플래그를 true로 활성화!
-            // 브라우저의 오토플레이 정책에 차단당했다면 이 이벤트가 실행되지 않아 다음 클릭 시 첫 안내를 정상적으로 듣게 됩니다.
-            utterance.onstart = function() {
-                hasPlayedIntro = true;
-            };
-
-            window.speechSynthesis.speak(utterance);
-        }
-
-        // 터치 디바이스에서 touchstart와 click이 동시에 감지되어 재생음이 두 번 부딪히는 현상 방지 필터
-        let lastTouchTime = 0;
-        function handleInteraction(e) {
-            const now = Date.now();
-            if (now - lastTouchTime < 400) return; // 0.4초 이내의 다중 호출을 차단해 버그 차단
-            
-            if (e.type === 'touchstart') {
-                lastTouchTime = now;
+        function handleTouchPlay() {
+            // 최초 진입 시 음성이 막혀있던 상황이라면 인트로 스트리밍 시동
+            if (!hasStartedPlaying) {
+                startStreamingGuidance();
+                return;
             }
             
-            // 만약 브라우저 차단 때문에 첫 소리를 듣지 못했다면 첫 안내를 재생하고, 이미 성공했다면 본문만 재생
-            if (!hasPlayedIntro) {
-                speakGuidance(true);
-            } else {
-                speakGuidance(false);
+            // 이미 첫 안내가 완전히 끝난 상태에서 다시 화면을 누르면 '복약 본문 내용만' 딜레이 없이 즉시 깔끔하게 반복 재생!
+            if (introFinished && firebaseReady) {
+                window.speechSynthesis.cancel();
+                const utteranceBody = new SpeechSynthesisUtterance(currentInstructionText);
+                utteranceBody.lang = 'ko-KR';
+                utteranceBody.rate = 0.95;
+                window.speechSynthesis.speak(utteranceBody);
             }
         }
 
-        // 화면 상/하단 어디를 눌러도 본문 복약 지도를 즉각 재수신할 수 있도록 바인딩
-        document.body.addEventListener('click', handleInteraction);
-        document.body.addEventListener('touchstart', handleInteraction);
+        document.body.addEventListener('click', handleTouchPlay);
+        document.body.addEventListener('touchstart', handleTouchPlay);
     </script>
 </body>
 </html>
