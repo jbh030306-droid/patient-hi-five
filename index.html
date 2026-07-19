@@ -56,7 +56,12 @@
         const cleanId = pharmacyId.replace(/\s+/g, '').toLowerCase();
         if (cleanId === 'onnuri_minwoo' || cleanId === '온누리민우약국') { pharmacyId = '온누리민우약국'; }
 
-        document.getElementById('viewPharmacy').innerText = "🏥 " + pharmacyId + " 복약 지도";
+        // ✨ [수정 완료] 온누리민우약국 001번(포스터용 마스터 QR)일 때 타이틀 자막 범용 문구로 자동 변경
+        if (pharmacyId === '온누리민우약국' && idParam === '001') {
+            document.getElementById('viewPharmacy').innerText = "🏥 성북구 배리어프리 참여 약국";
+        } else {
+            document.getElementById('viewPharmacy').innerText = "🏥 " + pharmacyId + " 복약 지도";
+        }
 
         let dbFetchPath = 'pharmacies/' + pharmacyId + '/stickers/' + idParam;
         let currentInstructionText = "복약 정보를 성공적으로 불러왔습니다."; 
@@ -79,21 +84,19 @@
 
         // 🌟 [모바일 완전 정복] 1터치 즉시 재생 코어 함수
         function handlePlay() {
-            // 1. 모바일 기기가 대기 상태로 잠겨있다면 무조건 강제 깨우기 실행
             if (window.speechSynthesis.paused) {
                 window.speechSynthesis.resume();
             }
             
-            // 2. 굳어있거나 꼬여있는 기존 모바일 음성 버그 엔진을 무조건 선제적으로 깨끗이 초기화!
             window.speechSynthesis.cancel(); 
 
             let speechText = "";
             if (isFirstPlay) {
-                // 최초 터치 시에만 사려 깊은 안내 문구 결합 송출
-                speechText = `큐알 코드 인식에 성공하였습니다. 화면 어디를 눌러도 음성이 다시 재생됩니다. ${pharmacyId}에서 전해드리는 복약 지도 내용입니다. ${currentInstructionText}`;
+                // ✨ [수정 완료] 음성 안내(TTS)에서도 특정 약국 이름 대신 범용 명칭으로 자연스럽게 결합 송출
+                let introName = (pharmacyId === '온누리민우약국' && idParam === '001') ? "성북구 배리어프리 참여 약국" : `${pharmacyId}`;
+                speechText = `큐알 코드 인식에 성공하였습니다. 화면 어디를 눌러도 음성이 다시 재생됩니다. ${introName}에서 전해드리는 안내 내용입니다. ${currentInstructionText}`;
                 isFirstPlay = false; // 플래그 오프
             } else {
-                // 두 번째 터치부터는 알맹이 복약 가이드만 즉시 0초 만에 낭독!
                 speechText = currentInstructionText;
             }
 
@@ -102,13 +105,9 @@
             utterance.rate = 0.95; // 시각 약자분들이 인지하기 가장 정갈한 속도 비율
             utterance.pitch = 1.0;
 
-            // 최종 낭독 명령 하달
             window.speechSynthesis.speak(utterance);
         }
 
-        // 🌟 [표준 회귀] 유령 클릭 방지용 무력화 코드가 오히려 오디오 잠금 해제를 막았던 부작용을 해결하기 위해,
-        // 구글/애플이 100% 신뢰하는 순수 표준 클릭 이벤트 하나로만 통합 바인딩합니다.
-        // (meta 태그의 user-scalable=no 덕분에 모바일에서도 클릭 반응 속도는 즉각적입니다.)
         document.getElementById('playButton').addEventListener('click', handlePlay);
         document.body.addEventListener('click', handlePlay);
     </script>
