@@ -10,24 +10,66 @@
         * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; -webkit-user-select: none; }
         html, body { width: 100%; height: 100%; overflow: hidden; background-color: #121212; font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, sans-serif; }
         .viewport-wrapper { display: flex; flex-direction: column; width: 100%; height: 100vh; }
-        .top-section { flex: 6.2; background-color: #121212; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 40px 24px; text-align: center; position: relative; }
-        .badge { background-color: rgba(16, 185, 129, 0.15); color: #10b981; padding: 8px 18px; border-radius: 50px; font-size: 15px; font-weight: 700; margin-bottom: 25px; display: inline-flex; align-items: center; gap: 6px; border: 1px solid rgba(16, 185, 129, 0.3); }
-        .section-label { color: #94a3b8; font-size: 18px; font-weight: 700; margin-bottom: 20px; letter-spacing: 0.05em; }
-        .instruction-text { font-size: 32px; font-weight: 800; line-height: 1.5; color: #ff6b6b; max-width: 90%; word-break: keep-all; text-align: center; letter-spacing: -0.02em; }
-        .bottom-section { flex: 3.8; background-color: #2563eb; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 24px; cursor: pointer; transition: background-color 0.2s ease; position: relative; box-shadow: 0 -10px 30px rgba(0, 0, 0, 0.3); }
+        
+        /* 🌟 [버그 수정] 상단 영역에 내부 스크롤 기능을 활성화하여 절대 글자가 잘리지 않도록 조치 */
+        .top-section { 
+            flex: 6.2; 
+            background-color: #121212; 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            justify-content: flex-start; 
+            padding: 30px 20px; 
+            text-align: center; 
+            position: relative; 
+            overflow-y: auto; 
+            -webkit-overflow-scrolling: touch; 
+        }
+        
+        /* 🌟 [구조 추가] 글이 짧을 때는 수직 중앙 정렬, 길어지면 스크롤이 정상 작동하도록 돕는 정렬 래퍼 */
+        .scroll-content {
+            margin: auto 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 100%;
+        }
+
+        .badge { background-color: rgba(16, 185, 129, 0.15); color: #10b981; padding: 8px 18px; border-radius: 50px; font-size: 15px; font-weight: 700; margin-bottom: 20px; display: inline-flex; align-items: center; gap: 6px; border: 1px solid rgba(16, 185, 129, 0.3); }
+        .section-label { color: #94a3b8; font-size: 18px; font-weight: 700; margin-bottom: 15px; letter-spacing: 0.05em; }
+        
+        /* 🌟 [반응형 글자 크기] 모바일 화면 너비에 맞춰 대형 글자 크기가 유연하게 최적화됩니다. */
+        .instruction-text { 
+            font-size: clamp(23px, 5.8vw, 32px); 
+            font-weight: 800; 
+            line-height: 1.5; 
+            color: #ff6b6b; 
+            max-width: 95%; 
+            word-break: keep-all; 
+            text-align: center; 
+            letter-spacing: -0.02em; 
+        }
+        
+        .bottom-section { flex: 3.8; background-color: #2563eb; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 24px; cursor: pointer; transition: background-color 0.2s ease; position: relative; box-shadow: 0 -10px 30px rgba(0, 0, 0, 0.3); flex-shrink: 0; }
         .bottom-section:active { background-color: #1d4ed8; }
         .speaker-icon { font-size: 76px; margin-bottom: 12px; filter: drop-shadow(0 4px 10px rgba(0,0,0,0.2)); animation: pulse 2s infinite; }
-        .touch-guide-text { color: #ffffff; font-size: 24px; font-weight: 800; letter-spacing: -0.03em; text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2); }
+        .touch-guide-text { color: #ffffff; font-size: 24px; font-weight: 800; letter-spacing: -0.03em; text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2); text-align: center; }
         @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.06); } 100% { transform: scale(1); } }
+        
+        /* 스크롤바 디자인 숨김 처리 (시각적 깔끔함 유지) */
+        .top-section::-webkit-scrollbar { width: 0px; background: transparent; }
     </style>
 </head>
 <body>
 
     <div class="viewport-wrapper">
         <div class="top-section">
-            <div class="badge">✓ 성북구 약사회 시범운영</div>
-            <div class="section-label" id="viewPharmacy">연결 중...</div>
-            <div class="instruction-text" id="viewInstruction">복약 정보를 가져오고 있습니다...</div>
+            <!-- 🌟 내부 스크롤 및 중앙 유지를 위한 안전 기둥 배치 -->
+            <div class="scroll-content">
+                <div class="badge">✓ 성북구 약사회 시범운영</div>
+                <div class="section-label" id="viewPharmacy">연결 중...</div>
+                <div class="instruction-text" id="viewInstruction">복약 정보를 가져오고 있습니다...</div>
+            </div>
         </div>
 
         <div class="bottom-section" id="playButton">
@@ -56,7 +98,6 @@
         const cleanId = pharmacyId.replace(/\s+/g, '').toLowerCase();
         if (cleanId === 'onnuri_minwoo' || cleanId === '온누리민우약국') { pharmacyId = '온누리민우약국'; }
 
-        // ✨ [수정 완료] 온누리민우약국 001번(포스터용 마스터 QR)일 때 타이틀 자막 범용 문구로 자동 변경
         if (pharmacyId === '온누리민우약국' && idParam === '001') {
             document.getElementById('viewPharmacy').innerText = "🏥 성북구 배리어프리 참여 약국";
         } else {
@@ -65,9 +106,8 @@
 
         let dbFetchPath = 'pharmacies/' + pharmacyId + '/stickers/' + idParam;
         let currentInstructionText = "복약 정보를 성공적으로 불러왔습니다."; 
-        let isFirstPlay = true; // 최초 1회만 긴 안내방송을 틀기 위한 관리 플래그
+        let isFirstPlay = true; 
 
-        // 파이어베이스 실시간 수신 리스너
         database.ref(dbFetchPath).on('value', (snapshot) => {
             const data = snapshot.val();
             const targetBox = document.getElementById("viewInstruction");
@@ -82,7 +122,6 @@
             }
         });
 
-        // 🌟 [모바일 완전 정복] 1터치 즉시 재생 코어 함수
         function handlePlay() {
             if (window.speechSynthesis.paused) {
                 window.speechSynthesis.resume();
@@ -92,17 +131,16 @@
 
             let speechText = "";
             if (isFirstPlay) {
-                // ✨ [수정 완료] 음성 안내(TTS)에서도 특정 약국 이름 대신 범용 명칭으로 자연스럽게 결합 송출
                 let introName = (pharmacyId === '온누리민우약국' && idParam === '001') ? "성북구 배리어프리 참여 약국" : `${pharmacyId}`;
                 speechText = `큐알 코드 인식에 성공하였습니다. 화면 어디를 눌러도 음성이 다시 재생됩니다. ${introName}에서 전해드리는 안내 내용입니다. ${currentInstructionText}`;
-                isFirstPlay = false; // 플래그 오프
+                isFirstPlay = false; 
             } else {
                 speechText = currentInstructionText;
             }
 
             const utterance = new SpeechSynthesisUtterance(speechText);
             utterance.lang = 'ko-KR';
-            utterance.rate = 0.95; // 시각 약자분들이 인지하기 가장 정갈한 속도 비율
+            utterance.rate = 0.95; 
             utterance.pitch = 1.0;
 
             window.speechSynthesis.speak(utterance);
